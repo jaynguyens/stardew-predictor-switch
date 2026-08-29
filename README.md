@@ -2,7 +2,11 @@
 
 ## Local Switch 1.6.15 test build
 
-This working tree is on branch `local-switch-1.6.15`. It includes the JKISS
+Hosted build:
+
+<https://jaynguyens.github.io/stardew-predictor-switch/>
+
+This build is published from branch `local-switch-1.6.15`. It includes the JKISS
 implementation from upstream pull request #40 and aliases Predictor's global
 `CSRandom` constructor to `JKRandom` before the main application loads.
 
