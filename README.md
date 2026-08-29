@@ -47,6 +47,12 @@ game will abort those Fairy events; the Night Events tab reports them as
 blocked instead of guaranteed visits. Using `gud=57` models a Fall 1 Greenhouse
 repair and reproduces the source's Fall 21/24 Fairy RNG selections.
 
+Cross-check seed `77445`: the Spring 19 Fairy, Spring/Summer weather, and listed
+Spring cart stock match the Switch source. Spring 5 Year 1 is correctly forced
+sunny even when its unused seeded roll is rain. The reported Day 5 iron bar in
+George's trash can is reproduced with `hfr=1`, since bar loot requires the
+Furnace recipe state.
+
 ## About Stardew Predictor
 
 This app simulates the random number generator used in [Stardew Valley](https://stardewvalley.net/) and makes "predictions" about the game either from the Game ID or by reading the save file. Currently, the information predicted includes special mine levels (e.g. mushroom floor &amp; infestations), random items sold by some vendors, results from cracking geodes, the train schedule, and more.

@@ -203,7 +203,9 @@ window.onload = function () {
 		var year = 1 + Math.floor((day - 1) / 112);
 		var rng;
 
-		if (day === 1 || day === 2 || day === 4 || dayOfMonth === 1) {
+		// Spring 1, 2, 4, and 5 of Year 1 have forced sun. The day-5
+		// override happens outside getWeatherModificationsForDate in-game.
+		if (day === 1 || day === 2 || day === 4 || day === 5 || dayOfMonth === 1) {
 			return 'Sun';
 		}
 		if (day === 3) {
