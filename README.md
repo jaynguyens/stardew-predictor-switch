@@ -1,5 +1,29 @@
 # stardew-predictor
 
+## Local Switch 1.6.15 test build
+
+This working tree is on branch `local-switch-1.6.15`. It includes the JKISS
+implementation from upstream pull request #40 and aliases Predictor's global
+`CSRandom` constructor to `JKRandom` before the main application loads.
+
+Run:
+
+```sh
+./serve-switch.sh
+```
+
+Then open:
+
+```text
+http://127.0.0.1:9000/index.html?id=8478309&v=1.6.15&dp=5
+```
+
+Verified for seed `8478309`: Night-1 Crop Fairy, the supplied Spring rain
+calendar, and Spring 5/7 Traveling Cart identities and prices. Known mismatch:
+the predictor reports quantity 5 for Spring 5 Dish O' The Sea while the physical
+Switch 2 observation records quantity 1. Upstream PR testing also marks geodes
+and some multiplayer-ID-dependent/night-event results as not fully reliable.
+
 ## About Stardew Predictor
 
 This app simulates the random number generator used in [Stardew Valley](https://stardewvalley.net/) and makes "predictions" about the game either from the Game ID or by reading the save file. Currently, the information predicted includes special mine levels (e.g. mushroom floor &amp; infestations), random items sold by some vendors, results from cracking geodes, the train schedule, and more.

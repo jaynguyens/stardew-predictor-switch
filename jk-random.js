@@ -24,7 +24,6 @@ function JKRandom(Seed) {
   this.y = 987654321;
   this.z = 43219876;
   this.c = 6543217;
-  console.log("<<");
 }
 
 JKRandom.prototype.Sample = function() {
