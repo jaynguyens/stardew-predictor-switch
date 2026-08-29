@@ -170,6 +170,77 @@ window.onload = function () {
 		return H.update(array.buffer).digest().toNumber();
 	}
 
+	var greenRainDays = [ 5, 6, 7, 14, 15, 16, 18, 23 ];
+	var festivalWeatherByDayOfYear = {
+		13: "Egg Festival",
+		24: "Flower Dance",
+		39: "Luau",
+		48: "Trout Derby",
+		49: "Trout Derby",
+		56: "Moonlight Jellies",
+		72: "Stardew Valley Fair",
+		83: "Sprit's Eve",
+		92: "Festival of Ice",
+		96: "Squid Fest",
+		97: "Squid Fest",
+		99: "Night Market",
+		100: "Night Market",
+		101: "Night Market",
+		109: "Winter Star"
+	};
+
+	function getTownWeather(day) {
+		// Weather logic from Data/LocationContexts and
+		// StardewValley.GameData.getWeatherModificationsForDate(). Keeping this
+		// in one place is important because weather can also prevent farm events.
+		var dayOfMonth = (day - 1) % 28 + 1;
+		var dayOfYear = (day - 1) % 112 + 1;
+		var season = Math.floor((dayOfYear - 1) / 28);
+		var year = 1 + Math.floor((day - 1) / 112);
+		var rng;
+
+		if (day === 1 || day === 2 || day === 4 || dayOfMonth === 1) {
+			return 'Sun';
+		}
+		if (day === 3) {
+			return 'Rain';
+		}
+		if (festivalWeatherByDayOfYear.hasOwnProperty(dayOfYear)) {
+			return festivalWeatherByDayOfYear[dayOfYear];
+		}
+
+		if (season === 0 || season === 2) {
+			rng = new CSRandom(getRandomSeed(getHashFromString("location_weather"), save.gameID, day - 1));
+			return rng.NextDouble() < 0.183 ? 'Rain' : 'Sun';
+		}
+		if (season === 1) {
+			rng = new CSRandom(getRandomSeed(year * 777, save.gameID));
+			var greenRainDay = greenRainDays[rng.Next(greenRainDays.length)];
+			if (dayOfMonth === greenRainDay) {
+				return 'Green Rain';
+			}
+			if (dayOfMonth % 13 === 0) {
+				return 'Storm';
+			}
+			rng = new CSRandom(getRandomSeed(day - 1, save.gameID / 2, getHashFromString("summer_rain_chance")));
+			return rng.NextDouble() < 0.12 + 0.003 * (dayOfMonth - 1) ? 'Rain' : 'Sun';
+		}
+
+		// Winter precipitation is an unpredictable upgrade from clear weather.
+		return 'Sun';
+	}
+
+	function isRainyTownWeather(weather) {
+		return weather === 'Rain' || weather === 'Green Rain' || weather === 'Storm';
+	}
+
+	function isGreenhouseUnlockedOnDay(day) {
+		if (save.greenhouseUnlockDay >= 0) {
+			return day >= save.greenhouseUnlockDay;
+		}
+		return save.greenhouseUnlocked;
+	}
+
 	function parseSummary(xmlDoc) {
 		// farmTypes changed to object after 1.6 added ability for string keys
 		var output = '',
@@ -3389,6 +3460,7 @@ window.onload = function () {
 		save.quarryUnlocked = false;
 		save.desertUnlocked = false;
 		save.greenhouseUnlocked = false;
+		save.greenhouseUnlockDay = -1;
 		save.theaterUnlocked = false;
 		save.ccComplete = false;
 		save.jojaComplete = false;
@@ -3773,6 +3845,7 @@ window.onload = function () {
 		wasChanged.quarryUnlocked = overrideSaveData("quarryUnlocked", "quarryUnlocked", "qu", "bool");
 		wasChanged.desertUnlocked = overrideSaveData("desertUnlocked", "desertUnlocked", "du", "bool");
 		wasChanged.greenhouseUnlocked = overrideSaveData("greenhouseUnlocked", "greenhouseUnlocked", "gu", "bool");
+		wasChanged.greenhouseUnlockDay = overrideSaveData("greenhouseUnlockDay", "greenhouseUnlockDay", "gud", "int");
 		wasChanged.hasFurnaceRecipe = overrideSaveData("hasFurnaceRecipe", "hasFurnaceRecipe", "hfr", "bool");
 		wasChanged.hasSpecialCharm = overrideSaveData("hasSpecialCharm", "hasSpecialCharm", "hsc", "bool");
 		wasChanged.leoMoved = overrideSaveData("leoMoved", "leoMoved", "leo", "bool");
@@ -3810,6 +3883,7 @@ window.onload = function () {
 			(save.quarryUnlocked ? "&amp;qu=1" : "") +
 			(save.desertUnlocked ? "&amp;du=1" : "") +
 			(save.greenhouseUnlocked ? "&amp;gu=1" : "") +
+			(save.greenhouseUnlockDay >= 0 ? ("&amp;gud=" + save.greenhouseUnlockDay) : "") +
 			(save.ccComplete ? "&amp;cc=1" : "") +
 			(save.jojaComplete ? "&amp;jc=1" : "") +
 			(save.theaterUnlocked ? "&amp;tu=1" : "") +
@@ -3916,6 +3990,10 @@ window.onload = function () {
 			' unlocked</span><br/>';
 		output += '<span class="result">' + (wasChanged.greenhouseUnlocked ? "*":'') + 'Greenhouse is ' + (save.greenhouseUnlocked ? "" : "not") +
 			' unlocked</span><br/>';
+		if (save.greenhouseUnlockDay >= 0) {
+			output += '<span class="result">' + (wasChanged.greenhouseUnlockDay ? "*":'') + 'Greenhouse unlock day for calendar predictions: ' +
+				save.greenhouseUnlockDay + '</span><br/>';
+		}
 		output += '<span class="result">' + (wasChanged.ccComplete ? "*":'') + 'Community Center is ' + (save.ccComplete ? "" : "not") +
 			' complete</span><br/>';
 		output += '<span class="result">' + (wasChanged.jojaComplete ? "*":'') + 'Joja Community Development is ' + (save.jojaComplete ? "" : "not") +
@@ -7083,20 +7161,27 @@ var test = {};
 						for (var i = 0; i < 10; i++) {
 							rng.NextDouble();
 						}
+						var greenhouseUnlockedForEvent = isGreenhouseUnlockedOnDay(day + save.dayAdjust);
 						// If the greenhouse has been repaired, an extra roll for the windstorm needs to happen; because of the
 						// order of conditionals, this roll continues to happen even after the tree has fallen.
-						if (save.greenhouseUnlocked) {
+						if (greenhouseUnlockedForEvent) {
 							couldBeWindstorm = rng.NextDouble() < 0.1;
 						}
 						// We still would like to check for possible windstorm in saves that don't yet have a greenhouse and in that
 						// case we need to reuse the next event roll as the windstorm check.
 						var nextRoll = rng.NextDouble();
-						if (!save.greenhouseUnlocked) {
+						if (!greenhouseUnlockedForEvent) {
 							couldBeWindstorm = nextRoll < 0.1;
 						}
 						// Fairy event chance +.007 if there is a full-grown fairy rose on the farm, but that is too volatile for us.
+						// CropFairyEvent aborts during rain. Unlike crop placement, weather is seed-predictable in 1.6,
+						// so do not present a known-blocked roll as a potential visit.
 						if (nextRoll < 0.01 && (month%4) < 3) {
-							thisEvent = '<img src="blank.png" class="event" id="event_f"><br/>Fairy';
+							if (isRainyTownWeather(getTownWeather(day + save.dayAdjust))) {
+								thisEvent = '<span class="none">&nbsp;<br/>(Fairy blocked by rain)<br/>&nbsp</span>';
+							} else {
+								thisEvent = '<img src="blank.png" class="event" id="event_f"><br/>Fairy';
+							}
 						} else if (rng.NextDouble() < 0.01 && (day + 1 + save.dayAdjust) > 20) {
 							thisEvent = '<img src="blank.png" class="event" id="event_w"><br/>Witch';
 						} else if (rng.NextDouble() < 0.01 && (day + 1 + save.dayAdjust) > 5) {
@@ -8004,26 +8089,7 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 		// Some weather effects determined by Data/LocationContexts
 		// Overrides in StardewValley.GameData.getWeatherModificationsForDate()
 		var output = "",
-			grDays = [ 5, 6, 7, 14, 15, 16, 18, 23 ],
-			festivalDays = {
-				13: "Egg Festival",
-				24: "Flower Dance",
-				39: "Luau",
-				48: "Trout Derby",
-				49: "Trout Derby",
-				56: "Moonlight Jellies",
-				72: "Stardew Valley Fair",
-				83: "Sprit's Eve",
-				92: "Festival of Ice",
-				96: "Squid Fest",
-				97: "Squid Fest",
-				99: "Night Market",
-				100: "Night Market",
-				101: "Night Market",
-				109: "Winter Star"
-			},
 			year,
-			rng,
 			tclass;
 
 		if (typeof(offset) === 'undefined') {
@@ -8048,47 +8114,13 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 		var season = month % 4;
 		var monthName = save.seasonNames[season];
 		var year = 1 + Math.floor(offset / 112);
-		var rng = new CSRandom(getRandomSeed(year * 777, save.gameID));
-		var greenRainDay = grDays[rng.Next(grDays.length)];
 		output += '<table class="calendar"><thead><tr><th colspan="7">' + monthName + ' Year ' + year + '</th></tr>\n';
 		output += '<tr><th>M</th><th>T</th><th>W</th><th>Th</th><th>F</th><th>Sa</th><th>Su</th></tr></thead>\n<tbody>';
 		for (var week = 0; week < 4; week++) {
 			output += "<tr>";
 			for (var weekDay = 1; weekDay < 8; weekDay++) {
 				var day = 7 * week + weekDay + offset;
-				var weatherTown = 'Sun';
-				if (day == 1 || day == 2 || day == 4 || (day % 28) == 1) {
-					weatherTown = 'Sun';
-				} else if (day == 3) {
-					weatherTown = 'Rain';
-				} else if (festivalDays.hasOwnProperty(day % 112)) {
-					weatherTown = festivalDays[day % 112];
-				} else {
-					switch(season) {
-						case 0:
-						case 2:
-							rng = new CSRandom(getRandomSeed(getHashFromString("location_weather"), save.gameID, day-1));
-							if (rng.NextDouble() < 0.183) {
-								weatherTown = 'Rain';
-							}
-							break;
-						case 1:
-							// The -28 is because we are only using this for summer
-							var dayOfMonth = (day % 112) - 28;
-							rng = new CSRandom(getRandomSeed(day-1, save.gameID/2, getHashFromString("summer_rain_chance")));
-							if (dayOfMonth == greenRainDay) {
-								weatherTown = 'Green Rain';
-							} else if (dayOfMonth % 13 == 0) {
-								weatherTown = 'Storm';
-							} else {
-								var rainChance = 0.12 + 0.003*(dayOfMonth-1);
-								if (rng.NextDouble() < rainChance) {
-									weatherTown = 'Rain';
-								}
-							}
-							break;
-					}
-				}
+				var weatherTown = getTownWeather(day);
 				if (day < save.daysPlayed) {
 					tclass = "past";
 				} else if (day === save.daysPlayed) {
@@ -8096,7 +8128,7 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 				} else {
 					tclass = "future";
 				}
-				var icon = (weatherTown == 'Rain' || weatherTown == 'Green Rain' || weatherTown == 'Storm') ?
+				var icon = isRainyTownWeather(weatherTown) ?
 					'<img src="blank.png" class="icon" alt="Clear" id="w_rain">' :
 					'<img src="blank.png" class="icon" alt="Umbrella in rain" id="w_sun">';
 				output += '<td class="' + tclass + '"><span class="date"> ' + (day - offset) + '</span><br/>' +

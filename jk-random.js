@@ -89,10 +89,14 @@ JKRandom.prototype.Next = function(a, b) {
     return (max == 0) ? 0 : this.InternalSample() % max;
   } else {
   // Next() gives range of [0..INT_MAX)
-    var rndm = this.InternalSample();
-    while (rndm == INT_MIN)  { rndm = this.InternalSample(); }
+    // InternalSample is represented as an unsigned JS number, while Mono casts
+    // the generated value to a signed int before checking Int32.MinValue.
+    // Without this cast, 0x80000000 is never rejected because it is seen as
+    // positive 2147483648 instead of -2147483648.
+    var rndm = this.InternalSample() | 0;
+    while (rndm === INT_MIN)  { rndm = this.InternalSample() | 0; }
     var mask = rndm >> 31;
-    return (rndm ^ mask) + (mask & 1) >>> 0;
+    return (rndm ^ mask) + (mask & 1);
   }
 };
 

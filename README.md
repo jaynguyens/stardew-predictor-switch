@@ -22,11 +22,30 @@ Then open:
 http://127.0.0.1:9000/index.html?id=8478309&v=1.6.15&dp=5
 ```
 
+To reproduce the Reddit-observed Day-1 Fairy and Fall-19 Witch in one
+date-aware calendar, provide a Greenhouse repair day between those events. For
+example, a Summer-1 repair is:
+
+```text
+http://127.0.0.1:9000/index.html?id=8478309&v=1.6.15&dp=5&gud=29
+```
+
 Verified for seed `8478309`: Night-1 Crop Fairy, the supplied Spring rain
-calendar, and Spring 5/7 Traveling Cart identities and prices. Known mismatch:
-the predictor reports quantity 5 for Spring 5 Dish O' The Sea while the physical
-Switch 2 observation records quantity 1. Upstream PR testing also marks geodes
-and some multiplayer-ID-dependent/night-event results as not fully reliable.
+calendar, and the Traveling Cart identities, quantities, and prices reported by
+the original Switch 1.6 sources. Fairy rolls which are blocked by predicted rain
+are filtered from the Night Events calendar. Night events also apply the
+Greenhouse state on each predicted date when `gud` is supplied; this is required
+because Greenhouse repair adds an RNG roll. Upstream PR testing still marks
+geodes and some multiplayer-ID-dependent results as not fully reliable.
+
+Cross-check seed `24680`: the Spring and Summer rain calendars and the reported
+Traveling Cart items/prices match the Switch source, including Spring 28 Snow
+Yam/Crocus, Summer 5 Large Brown Egg, Summer 26 Tiger Trout/Cloth/Maple
+Syrup/Apricot, Fall 14 Red Cabbage Seeds, and Fall 28 Nautilus Shell. The
+source's Summer 5 and Fall 24 Fairy rolls fall on predicted rainy days, so the
+game will abort those Fairy events; the Night Events tab reports them as
+blocked instead of guaranteed visits. Using `gud=57` models a Fall 1 Greenhouse
+repair and reproduces the source's Fall 21/24 Fairy RNG selections.
 
 ## About Stardew Predictor
 

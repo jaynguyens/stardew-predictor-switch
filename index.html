@@ -21,13 +21,13 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="./jquery-3.2.1.min.js"><\/script>')</script>
 <script src="./cs-random.js"></script>
-<script src="./jk-random.js"></script>
+<script src="./jk-random.js?v=switch-1.6.15.1"></script>
 <script>
 // Local Switch 1.6.15 build: route every predictor RNG construction through
 // the Switch JKISS implementation from upstream PR #40.
 CSRandom = JKRandom;
 </script>
-<script src="./stardew-predictor.js?v=5.0.8"></script>
+<script src="./stardew-predictor.js?v=5.0.8-switch.2"></script>
 <script src="./BigInteger.min.js"></script>
 <script src="./xxhash.min.js"></script>
 <script src="./pako.min.js"></script>
@@ -90,6 +90,7 @@ Please report any bugs, suggestions, or other feedback to <a href="https://forum
 <tr><td class="code">quarryUnlocked</td><td class="code">qu</td><td>1 for true, 0 for false</td><td class="long_list">Quarry unlocked and quarry mine visited</td></tr>
 <tr><td class="code">desertUnlocked</td><td class="code">du</td><td>1 for true, 0 for false</td><td class="long_list">Desert unlocked</td></tr>
 <tr><td class="code">greenhouseUnlocked</td><td class="code">gu</td><td>1 for true, 0 for false</td><td class="long_list">Greenhouse unlocked (i.e. repaired)</td></tr>
+<tr><td class="code">greenhouseUnlockDay</td><td class="code">gud</td><td>Integer</td><td class="long_list">Total day when the Greenhouse became repaired, for date-aware Night Event predictions (Spring 1 Year 1 = 1, Summer 1 = 29)</td></tr>
 <tr><td class="code">ccComplete</td><td class="code">cc</td><td>1 for true, 0 for false</td><td class="long_list">Community Center restored</td></tr>
 <tr><td class="code">jojaComplete</td><td class="code">jc</td><td>1 for true, 0 for false</td><td class="long_list">Joja Community Development complete</td></tr>
 <tr><td class="code">theaterUnlocked</td><td class="code">tu</td><td>1 for true, 0 for false</td><td class="long_list">Theater unlocked (non-Joja version)</td></tr>
@@ -430,7 +431,8 @@ so <span class="strong">they are not 100% guaranteed</span>; in particular the
 <a href="https://stardewvalleywiki.com/Strange_Capsule">strange capsule</a> and stone owl events were 
 <a href="https://www.reddit.com/r/StardewValley/comments/5aj878/the_last_mystery_and_a_technical_explanation/">extremely rare</a>
 in earlier versions of the game, and in Stardw Valley 1.5.3 or later the strange capsule will only trigger once per save.</p>
-<p>In version 1.6, there is a new windstorm event which occurs sometime after the Greenhouse repair; the possibility of this event changes future event predictions because it causes an additional random roll even after it has completed. Any day which could be the windstorm will be marked with a stump icon on the calendar. Additionally, the app will try to detect in the save whether the Greenhouse has been restored (this can also be set with a URL parameter) and use that status when predicting other events. Be careful when looking ahead for future events if repairs have not been completed yet.</p>
+<p class="note">For 1.6 predictions, Fairy rolls on known rainy days are shown as blocked because the event cannot run in rain. Crop availability and valid placement checks still depend on the farm's live state.</p>
+<p>In version 1.6, there is a new windstorm event which occurs sometime after the Greenhouse repair; the possibility of this event changes future event predictions because it causes an additional random roll even after it has completed. Any day which could be the windstorm will be marked with a stump icon on the calendar. Additionally, the app will try to detect in the save whether the Greenhouse has been restored. Seed-only predictions can use the <span class="code">gud</span> URL parameter to specify the total day it was repaired; this avoids incorrectly applying one static Greenhouse state to the entire calendar.</p>
 <p class="note">Notes: The app may misidentify the type of event in version 1.2 if the farmer has the possibility of
 having more children.</p>
 <fieldset id="night-buttons"><div class="buttons">
