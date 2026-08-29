@@ -171,22 +171,26 @@ window.onload = function () {
 	}
 
 	var greenRainDays = [ 5, 6, 7, 14, 15, 16, 18, 23 ];
-	var festivalWeatherByDayOfYear = {
+	// These festivals force clear weather. Passive festivals are tracked
+	// separately because they don't replace the day's seeded weather.
+	var weatherForcingFestivalByDayOfYear = {
 		13: "Egg Festival",
 		24: "Flower Dance",
 		39: "Luau",
-		48: "Trout Derby",
-		49: "Trout Derby",
 		56: "Moonlight Jellies",
 		72: "Stardew Valley Fair",
 		83: "Sprit's Eve",
 		92: "Festival of Ice",
+		109: "Winter Star"
+	};
+	var passiveFestivalByDayOfYear = {
+		48: "Trout Derby",
+		49: "Trout Derby",
 		96: "Squid Fest",
 		97: "Squid Fest",
 		99: "Night Market",
 		100: "Night Market",
-		101: "Night Market",
-		109: "Winter Star"
+		101: "Night Market"
 	};
 
 	function getTownWeather(day) {
@@ -205,8 +209,8 @@ window.onload = function () {
 		if (day === 3) {
 			return 'Rain';
 		}
-		if (festivalWeatherByDayOfYear.hasOwnProperty(dayOfYear)) {
-			return festivalWeatherByDayOfYear[dayOfYear];
+		if (weatherForcingFestivalByDayOfYear.hasOwnProperty(dayOfYear)) {
+			return weatherForcingFestivalByDayOfYear[dayOfYear];
 		}
 
 		if (season === 0 || season === 2) {
@@ -8121,6 +8125,9 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 			for (var weekDay = 1; weekDay < 8; weekDay++) {
 				var day = 7 * week + weekDay + offset;
 				var weatherTown = getTownWeather(day);
+				var dayOfYear = (day - 1) % 112 + 1;
+				var weatherDisplay = passiveFestivalByDayOfYear.hasOwnProperty(dayOfYear) ?
+					weatherTown + ' (' + passiveFestivalByDayOfYear[dayOfYear] + ')' : weatherTown;
 				if (day < save.daysPlayed) {
 					tclass = "past";
 				} else if (day === save.daysPlayed) {
@@ -8132,7 +8139,7 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 					'<img src="blank.png" class="icon" alt="Clear" id="w_rain">' :
 					'<img src="blank.png" class="icon" alt="Umbrella in rain" id="w_sun">';
 				output += '<td class="' + tclass + '"><span class="date"> ' + (day - offset) + '</span><br/>' +
-					'<span class="cell">' + icon + weatherTown + '</span></td>';
+					'<span class="cell">' + icon + weatherDisplay + '</span></td>';
 			}
 			output += "</tr>\n";
 		}
