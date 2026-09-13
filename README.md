@@ -29,7 +29,7 @@ Run:
 Then open:
 
 ```text
-http://127.0.0.1:9000/index.html?id=8478309&v=1.6.15&dp=5
+http://127.0.0.1:9000/index.html?seed=96194896&v=1.6.15&dp=5
 ```
 
 To reproduce the Reddit-observed Day-1 Fairy and Fall-19 Witch in one
@@ -116,7 +116,10 @@ For a focused, independently implemented search of the playable nine-digit
 seed domain, use the optimized C++ rain scanner:
 
 ```sh
-# Verify one exact calendar.
+# Print the verified balanced recommendation and its exact calendar.
+./tools/search-switch-rain.sh recommended
+
+# Verify any other entered seed's exact calendar.
 ./tools/search-switch-rain.sh calendar 8213213
 
 # Search all valid new-game seed entries for the combined maximum.

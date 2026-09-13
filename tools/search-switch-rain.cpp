@@ -23,6 +23,8 @@ constexpr uint32_t P3 = 3266489917U;
 constexpr uint32_t P4 = 668265263U;
 constexpr uint32_t JK_A = 314527869U;
 constexpr uint32_t JK_B = 1234567U;
+// Balanced winner from the exhaustive playable nine-digit seed scan.
+constexpr uint32_t RECOMMENDED_SEED = 96194896U;
 
 constexpr uint32_t rotl(uint32_t value, int bits) {
 	return (value << bits) | (value >> (32 - bits));
@@ -225,6 +227,10 @@ bool better_secondary(const Result &a, const Result &b) {
 } // namespace
 
 int main(int argc, char **argv) {
+	if (argc == 2 && std::string(argv[1]) == "recommended") {
+		print_calendar(RECOMMENDED_SEED);
+		return 0;
+	}
 	if (argc == 3 && std::string(argv[1]) == "calendar") {
 		uint64_t seed = 0;
 		if (!parse_u64(argv[2], seed) || seed > 999999999ULL) {
@@ -236,6 +242,7 @@ int main(int argc, char **argv) {
 	}
 	if (argc > 5) {
 		std::cerr << "usage: search-switch-rain [begin] [end-exclusive<=1000000000] [threads] [total|spring|summer]\n"
+			<< "       search-switch-rain recommended\n"
 			<< "       search-switch-rain calendar ENTERED_SEED\n";
 		return 2;
 	}
@@ -251,6 +258,7 @@ int main(int argc, char **argv) {
 		|| parsed_threads > static_cast<uint64_t>(UINT32_MAX)
 		|| (objective != "total" && objective != "spring" && objective != "summer")) {
 		std::cerr << "usage: search-switch-rain [begin] [end-exclusive<=1000000000] [threads] [total|spring|summer]\n"
+			<< "       search-switch-rain recommended\n"
 			<< "       search-switch-rain calendar ENTERED_SEED\n";
 		return 2;
 	}

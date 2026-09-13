@@ -221,6 +221,12 @@ The balanced recommendation is `96194896`. Its exact wet dates are:
 - Summer: 6, 7, 8, 9, 12, 13, 15, 16, 17, 19, 24, 25, 26;
 - Green Rain: Summer 16; deterministic storms: Summer 13 and 26.
 
+Print this canonical result without rescanning the full domain:
+
+```sh
+./tools/search-switch-rain.sh recommended
+```
+
 This is only a weather score; cart stock, night events, and route timing are
 outside the objective.
 

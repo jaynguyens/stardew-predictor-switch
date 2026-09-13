@@ -63,4 +63,12 @@ winner_search=$($search 96194896 96194897 1 total)
 printf '%s\n' "$winner_search" | grep -F 'objective=total best=27 ties=1' >/dev/null
 assert_line "$winner_search" 'entered_seed=96194896 effective_seed=96194896 spring=14 summer=13 total=27'
 
+recommended=$($search recommended)
+assert_line "$recommended" 'entered_seed=96194896'
+assert_line "$recommended" 'effective_seed=96194896'
+assert_line "$recommended" 'spring=3,6,8,9,11,12,14,19,20,21,22,25,26,28'
+assert_line "$recommended" 'summer=6,7,8,9,12,13,15,16,17,19,24,25,26'
+assert_line "$recommended" 'green_rain=16'
+assert_line "$recommended" 'spring_count=14 summer_count=13 total=27'
+
 printf '%s\n' 'Switch rain search regression tests passed'
