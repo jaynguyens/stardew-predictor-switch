@@ -11,6 +11,15 @@
 var INT_MIN = -2147483648,
   INT_MAX = 2147483647;
 
+// Console observations show a manually entered Switch world seed behaving as
+// if it is converted through a 32-bit float before becoming the effective Game
+// ID. Values above 2^24 may therefore be rounded. Keep raw Game IDs from saves
+// and the seed cracker unchanged; this helper is only for new-game entries.
+function normalizeSwitchSeedEntry(Seed) {
+  "use strict";
+  return Math.trunc(Math.fround(Number(Seed)));
+}
+
 function JKRandom(Seed) {
   "use strict";
 

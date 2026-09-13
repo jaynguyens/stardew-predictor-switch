@@ -6,12 +6,16 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
 namespace {
+
+static_assert(sizeof(float) == 4 && std::numeric_limits<float>::is_iec559,
+	"Switch seed normalization requires IEEE-754 binary32 floats");
 
 constexpr uint32_t P1 = 2654435761U;
 constexpr uint32_t P2 = 2246822519U;
@@ -92,12 +96,20 @@ constexpr uint32_t LOCATION_WEATHER_HASH = static_cast<uint32_t>(-1513201250);
 constexpr uint32_t SUMMER_RAIN_HASH = static_cast<uint32_t>(-309161378);
 
 struct Result {
-	uint32_t seed;
+	uint32_t entered_seed;
+	uint32_t effective_seed;
 	uint8_t spring;
 	uint8_t summer;
 
 	int total() const { return spring + summer; }
 };
+
+uint32_t effective_switch_seed(uint32_t entered_seed) {
+	// Console observations show the Switch new-game field behaving as if its
+	// value passes through a single-precision representation. Above 2^24,
+	// nearby decimal entries can therefore resolve to the same internal ID.
+	return static_cast<uint32_t>(static_cast<float>(entered_seed));
+}
 
 inline bool spring_is_wet(uint32_t seed, int day) {
 	if (day == 3) return true;
@@ -121,7 +133,8 @@ inline bool summer_is_wet(uint32_t seed, int day, int green_day) {
 	return jk_next_double_below(hash, chance * SAMPLE_SCALE);
 }
 
-Result score_seed(uint32_t seed, int best_to_beat) {
+Result score_seed(uint32_t entered_seed, int best_to_beat) {
+	uint32_t seed = effective_switch_seed(entered_seed);
 	int spring = 1; // Spring 3 is guaranteed rain.
 	int summer = 3; // Summer 13/26 storms plus one Green Rain day.
 	int successes = 0;
@@ -137,7 +150,7 @@ Result score_seed(uint32_t seed, int best_to_beat) {
 		}
 		--remaining;
 		if (4 + successes + remaining < best_to_beat) {
-			return {seed, 0, 0};
+			return {entered_seed, seed, 0, 0};
 		}
 	}
 
@@ -152,19 +165,21 @@ Result score_seed(uint32_t seed, int best_to_beat) {
 		}
 		--remaining;
 		if (4 + successes + remaining < best_to_beat) {
-			return {seed, 0, 0};
+			return {entered_seed, seed, 0, 0};
 		}
 	}
-	return {seed, static_cast<uint8_t>(spring), static_cast<uint8_t>(summer)};
+	return {entered_seed, seed, static_cast<uint8_t>(spring), static_cast<uint8_t>(summer)};
 }
 
-void print_calendar(uint32_t seed) {
+void print_calendar(uint32_t entered_seed) {
+	uint32_t seed = effective_switch_seed(entered_seed);
 	int green_day = summer_green_rain_day(seed);
 	int spring_count = 0;
 	int summer_count = 0;
 	bool first = true;
 
-	std::cout << "seed=" << seed << "\nspring=";
+	std::cout << "entered_seed=" << entered_seed
+		<< "\neffective_seed=" << seed << "\nspring=";
 	for (int day = 1; day <= 28; ++day) {
 		if (!spring_is_wet(seed, day)) continue;
 		std::cout << (first ? "" : ",") << day;
@@ -201,7 +216,10 @@ bool better_secondary(const Result &a, const Result &b) {
 	int b_min = std::min(b.spring, b.summer);
 	if (a_min != b_min) return a_min > b_min;
 	if (a.spring != b.spring) return a.spring > b.spring;
-	return a.seed < b.seed;
+	bool a_is_exact = a.entered_seed == a.effective_seed;
+	bool b_is_exact = b.entered_seed == b.effective_seed;
+	if (a_is_exact != b_is_exact) return a_is_exact;
+	return a.entered_seed < b.entered_seed;
 }
 
 } // namespace
@@ -218,7 +236,7 @@ int main(int argc, char **argv) {
 	}
 	if (argc > 5) {
 		std::cerr << "usage: search-switch-rain [begin] [end-exclusive<=1000000000] [threads] [total|spring|summer]\n"
-			<< "       search-switch-rain calendar SEED\n";
+			<< "       search-switch-rain calendar ENTERED_SEED\n";
 		return 2;
 	}
 	uint64_t begin = 0;
@@ -233,7 +251,7 @@ int main(int argc, char **argv) {
 		|| parsed_threads > static_cast<uint64_t>(UINT32_MAX)
 		|| (objective != "total" && objective != "spring" && objective != "summer")) {
 		std::cerr << "usage: search-switch-rain [begin] [end-exclusive<=1000000000] [threads] [total|spring|summer]\n"
-			<< "       search-switch-rain calendar SEED\n";
+			<< "       search-switch-rain calendar ENTERED_SEED\n";
 		return 2;
 	}
 	auto metric = [&](const Result &result) {
@@ -258,8 +276,13 @@ int main(int argc, char **argv) {
 				if (chunk_begin >= end) break;
 				uint64_t chunk_end = std::min(end, chunk_begin + chunk_size);
 				for (uint64_t raw_seed = chunk_begin; raw_seed < chunk_end; ++raw_seed) {
+					uint32_t entered_seed = static_cast<uint32_t>(raw_seed);
+					// Every rounded result is itself an enterable integer. Searching
+					// only stable entries removes aliases without losing any possible
+					// effective Game ID.
+					if (effective_switch_seed(entered_seed) != entered_seed) continue;
 					int current_best = best_total.load(std::memory_order_relaxed);
-					Result result = score_seed(static_cast<uint32_t>(raw_seed), objective == "total" ? current_best : 0);
+					Result result = score_seed(entered_seed, objective == "total" ? current_best : 0);
 					int result_metric = metric(result);
 					if (result_metric < current_best) continue;
 					std::lock_guard<std::mutex> lock(results_mutex);
@@ -289,7 +312,9 @@ int main(int argc, char **argv) {
 		<< " objective=" << objective << " best=" << best_total.load() << " ties=" << best_count << "\n";
 	for (const Result &result : best_results) {
 		if (metric(result) != best_total.load()) continue;
-		std::cout << "seed=" << result.seed << " spring=" << static_cast<int>(result.spring)
+		std::cout << "entered_seed=" << result.entered_seed
+			<< " effective_seed=" << result.effective_seed
+			<< " spring=" << static_cast<int>(result.spring)
 			<< " summer=" << static_cast<int>(result.summer) << " total=" << result.total() << "\n";
 	}
 	if (best_count > best_results.size()) {

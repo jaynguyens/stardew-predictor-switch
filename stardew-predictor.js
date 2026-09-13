@@ -3451,6 +3451,7 @@ window.onload = function () {
 		save.farmName = "Unknown Farm";
 		save.niceDate = '';
 		save.gameID = null;
+		save.enteredSeed = null;
 		save.daysPlayed = 1;
 		save.year = 1;
 		save.geodesCracked = [0];
@@ -3831,6 +3832,25 @@ window.onload = function () {
 		var wasChanged = {};
 		wasChanged.version = overrideSaveData("version", "version", "v", "text");
 		wasChanged.gameID = overrideSaveData("gameID", "gameID", "id", "bigint");
+		wasChanged.enteredSeed = overrideSaveData("enteredSeed", "enteredSeed", "seed", "bigint");
+		if (wasChanged.enteredSeed) {
+			var enteredSeedNumber = Number(save.enteredSeed.toString());
+			if (!Number.isInteger(enteredSeedNumber) || enteredSeedNumber < 0 || enteredSeedNumber > 999999999) {
+				$("#results-note").html("Ignoring invalid enteredSeed URL parameter. Switch new-game seeds must be integers from 0 through 999999999.");
+				save.enteredSeed = null;
+				wasChanged.enteredSeed = false;
+			} else {
+				save.gameID = normalizeSwitchSeedEntry(enteredSeedNumber);
+			}
+		}
+		if (wasChanged.gameID && !wasChanged.enteredSeed) {
+			var exactGameIdNumber = Number(save.gameID.toString());
+			if (Number.isInteger(exactGameIdNumber) && exactGameIdNumber >= 0 && exactGameIdNumber <= 999999999 &&
+				normalizeSwitchSeedEntry(exactGameIdNumber) !== exactGameIdNumber) {
+				$("#results-note").html("This URL uses an exact Game ID which changes when typed into the Switch new-game Random Seed field. If " +
+					exactGameIdNumber + " is a value you plan to type in-game, use ?seed=" + exactGameIdNumber + " instead.");
+			}
+		}
 		wasChanged.dayAdjust = overrideSaveData("dayAdjust", "dayAdjust", "da", "int");
 		wasChanged.daysPlayed = overrideSaveData("daysPlayed", "daysPlayed", "dp", "int");
 		if (save.dayAdjust > 0 || wasChanged.daysPlayed) {
@@ -3879,7 +3899,8 @@ window.onload = function () {
 		}
 		save.dailyLuck = Math.min(0.1, Math.max(-0.1, save.dailyLuck));
 		// Add share URL. dayAdjust and all boolean options only included if non-default
-		var share_URL = window.location.protocol + '//' + window.location.host + window.location.pathname + "?id=" + save.gameID +
+		var seedParameter = wasChanged.enteredSeed ? ("seed=" + save.enteredSeed) : ("id=" + save.gameID);
+		var share_URL = window.location.protocol + '//' + window.location.host + window.location.pathname + "?" + seedParameter +
 			"&amp;v=" + save.version + "&amp;dp=" + save.daysPlayed + "&amp;dl=" + save.dailyLuck + "&amp;ll=" + save.luckLevel +
 			"&amp;dml=" + save.deepestMineLevel + "&amp;vg=" + save.visitsUntilY1Guarantee + "&amp;gc=" + save.geodesCracked[0] +
 			"&amp;mb=" + save.mysteryBoxesOpened[0] + "&amp;te=" + save.timesEnchanted[0] + "&amp;tc=" + save.trashCansChecked[0] +
@@ -3922,11 +3943,15 @@ window.onload = function () {
 		}
 		// Finally we prepare the summary
 		if (save.gameID === null) {
-			return '<span class="error">Fatal Error: Problem reading save file and no ID passed via query string.</span>';
+			return '<span class="error">Fatal Error: Problem reading save file and no Game ID or entered seed passed via query string.</span>';
 		}
 		output += '<h3>Save State Summary</h3><p>Important information taken from the save file which is needed for predictions. Anything that was overridden by <a href="#advanced_usage">a URL parameter</a> is marked with an asterisk (*).</p>';
 		output += '<table class="summary"><tr><td>';
-		output += '<span class="result">' + (wasChanged.gameID ? "*":'') + 'Game ID: ' + save.gameID + '</span><br/>';
+		if (wasChanged.enteredSeed) {
+			output += '<span class="result">*Entered Switch seed: ' + save.enteredSeed + '</span><br/>';
+		}
+		output += '<span class="result">' + ((wasChanged.gameID || wasChanged.enteredSeed) ? "*":'') +
+			(wasChanged.enteredSeed ? 'Effective Game ID: ' : 'Game ID: ') + save.gameID + '</span><br/>';
 		output += '<span class="result">' + (wasChanged.version ? "*":'') + 'Stardew version: ' + save.version + '</span><br/>';
 		if (save.names.length === 0) { save.names[0] = "Unknown Farmer"; }
 		output += '<span class="result">Farmer ' + save.names[0] + ' of ' + save.farmName + '</span><br/>';
@@ -9279,6 +9304,10 @@ Object.keys(test).forEach(function(key, index) { if (test[key].s > 0 && test[key
 	if ($.QueryString.hasOwnProperty("gameid")) {
 		updateOutput();
 	} else if ($.QueryString.hasOwnProperty("id")) {
+		updateOutput();
+	} else if ($.QueryString.hasOwnProperty("enteredseed")) {
+		updateOutput();
+	} else if ($.QueryString.hasOwnProperty("seed")) {
 		updateOutput();
 	}
 

@@ -21,13 +21,13 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="./jquery-3.2.1.min.js"><\/script>')</script>
 <script src="./cs-random.js"></script>
-<script src="./jk-random.js?v=switch-1.6.15.1"></script>
+<script src="./jk-random.js?v=switch-1.6.15.2"></script>
 <script>
 // Local Switch 1.6.15 build: route every predictor RNG construction through
 // the Switch JKISS implementation from upstream PR #40.
 CSRandom = JKRandom;
 </script>
-<script src="./stardew-predictor.js?v=5.0.8-switch.4"></script>
+<script src="./stardew-predictor.js?v=5.0.8-switch.5"></script>
 <script src="./BigInteger.min.js"></script>
 <script src="./xxhash.min.js"></script>
 <script src="./pako.min.js"></script>
@@ -73,7 +73,8 @@ Please report any bugs, suggestions, or other feedback to <a href="https://forum
 <p>The URL for the current prediction with all non-default parameters set (useful for sharing) is:<br/><span class="code" id="share_URL">(N/A)</span>
 <table class="output"><tr><th>Long Name</th><th>Abbreviation</th><th>Type</th><th>Description</th></tr>
 <tr><td class="code">version</td><td class="code">v</td><td>Semver identifier<br/>e.g. <span class="code">1.6.0</span></td><td class="long_list">Sets what Stardew version to use for predictions</td></tr>
-<tr><td class="code">gameID</td><td class="code">id</td><td>Integer</td><td class="long_list">Sets the game seed</td></tr>
+<tr><td class="code">gameID</td><td class="code">id</td><td>Integer</td><td class="long_list">Sets the exact internal Game ID, such as one read from a save or seed cracker</td></tr>
+<tr><td class="code">enteredSeed</td><td class="code">seed</td><td>Integer, 0–999999999</td><td class="long_list">Sets a number typed into the Switch new-game Random Seed field. Large values are converted to the effective Game ID using the Switch field's single-precision behavior.</td></tr>
 <tr><td class="code">daysPlayed</td><td class="code">dp</td><td>Integer</td><td class="long_list">Sets days played which changes where calendar views start</td></tr>
 <tr><td class="code">dayAdjust</td><td class="code">da</td><td>Integer</td><td class="long_list">Offsets days played by the given amount to deal with old multiplayer bugs</td></tr>
 <tr><td class="code">dailyLuck</td><td class="code">dl</td><td>Float</td><td class="long_list">Sets daily luck for garbage checks; will be forced into range [-0.1, 0.1]<br/>Note, this is raw luck before special charm is taken into account</td></tr>

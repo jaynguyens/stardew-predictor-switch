@@ -11,6 +11,10 @@ var context = { BigInt: BigInt, Date: Date, parseInt: parseInt };
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "jk-random.js"), "utf8"), context);
 
+assert.equal(context.normalizeSwitchSeedEntry(8213213), 8213213);
+assert.equal(context.normalizeSwitchSeedEntry(401102058), 401102048);
+assert.equal(context.normalizeSwitchSeedEntry(418923369), 418923360);
+
 var rng = new context.JKRandom(8478309);
 assert.deepEqual(
 	Array.from({ length: 5 }, function () { return rng.Next(); }),

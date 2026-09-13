@@ -1,4 +1,4 @@
-# Switch 1.6.15 Year-1 weather seed-search rules
+# Switch 1.6.15 Year-1 typed-seed weather-search rules
 
 This note defines the rules an exhaustive search should use when maximizing wet
 days across Year 1 Spring and Summer. A **wet day** is Rain, Storm, or Green
@@ -12,7 +12,10 @@ Stardew Valley 1.6 source snapshot at commit
 checked against the current Stardew Valley Wiki. The Switch JKISS generator is
 community reverse engineering rather than official Nintendo or ConcernedApe
 documentation; its provenance is Oshawk's seed cracker and the upstream
-predictor Switch PR, which reports live-game weather validation.
+predictor Switch PR, which reports live-game weather validation. The
+single-precision input behavior is empirical: it is reproduced exactly by the
+large-seed console observations below, but it isn't visible in the platform-
+neutral decompiled C# source.
 
 ## Playable seed domain
 
@@ -28,6 +31,33 @@ That is exactly 1,000,000,000 candidates. Leading zeroes do not create distinct
 numeric seeds. The browser predictor's URL parser accepts arbitrary-length
 integer `id` values, so it can evaluate a 10-digit ID, but such an ID is outside
 the vanilla seed textbox's normal input domain.
+
+### Entered seed versus effective Game ID
+
+Console observations show that the Switch new-game field behaves as if the
+entered integer is converted through an IEEE-754 binary32 value. Every integer
+through `16,777,216` (`2^24`) is exact. Above that point, some adjacent entries
+round to the same effective Game ID, with the spacing increasing as the value
+gets larger.
+
+Examples confirmed against console-observed weather:
+
+| Entered seed | Effective Game ID |
+|---:|---:|
+| `277770050` | `277770048` |
+| `401102058` | `401102048` |
+| `418923369` | `418923360` |
+| `422049544` | `422049536` |
+
+The web build therefore distinguishes `seed`, meaning the value typed into the
+Switch new-game field, from `id`, meaning an exact internal Game ID. For
+example, use `?seed=401102058`, not `?id=401102058`, to reproduce a manually
+entered value.
+
+The exhaustive scanner searches only stable entries where the entered seed is
+already equal to its effective Game ID. This removes aliases without losing a
+possible outcome, because every rounded effective ID is itself a valid integer
+entry in the nine-digit domain.
 
 Source: [`AdvancedGameOptions.cs`, lines 184-207](https://github.com/Dannode36/StardewValleyDecompiled/blob/5225ef409e42a6159a82cf81200bf6eb315c9961/Stardew%20Valley/StardewValley.Menus/AdvancedGameOptions.cs#L184-L207).
 The [Advanced Game Options documentation](https://wiki.stardewvalley.net/Options#Advanced_Game_Options)
@@ -126,6 +156,8 @@ but remain community reverse engineering.
 ## Scanner acceptance checklist
 
 - Search the inclusive range `0..999_999_999` only.
+- Convert typed entries through IEEE-754 binary32 before scoring, or equivalently
+  search only entries which are unchanged by that conversion.
 - Count Rain, Storm, and Green Rain as wet.
 - Preserve Spring 5 as forced Sun.
 - Use the target-day Summer formula with `D - 1`.
@@ -135,60 +167,71 @@ but remain community reverse engineering.
 
 ## Observed calibration seeds
 
-Before the exhaustive scan, both the local Weather tab and the independent
-scanner were checked against four Reddit-observed Switch calendars:
+Before the exhaustive scan, the weather implementation was checked against the
+following Reddit-observed Switch calendars:
 
-| Seed | Observed Spring wet dates | Observed Summer wet dates |
-|---:|---|---|
-| `8213213` (entered as `008213213`) | 3, 7, 9, 10, 12, 17, 19, 20, 21, 25, 28 | Not reported |
-| `8478309` | 3, 7, 8, 9, 10, 14, 22, 23, 25, 26, 27 | 6, 8, 12, 13, 25, 26, 27 |
-| `24680` | 3, 9, 10, 11, 12, 14, 15, 18, 26, 27 | 5, 10, 13, 18, 21, 26 |
-| `77445` | 3, 6, 14, 28 | 13, 16, 17, 26 |
+| Entered seed | Effective ID | Observed Spring wet dates | Observed Summer wet dates |
+|---:|---:|---|---|
+| `8213213` (written as `008213213`) | `8213213` | 3, 7, 9, 10, 12, 17, 19, 20, 21, 25, 28 | Not reported |
+| `8478309` | `8478309` | 3, 7, 8, 9, 10, 14, 22, 23, 25, 26, 27 | 6, 8, 12, 13, 25, 26, 27 |
+| `24680` | `24680` | 3, 9, 10, 11, 12, 14, 15, 18, 26, 27 | 5, 10, 13, 18, 21, 26 |
+| `77445` | `77445` | 3, 6, 14, 28 | 13, 16, 17, 26 |
+| `2171145` | `2171145` | 3, 6, 14, 16, 18, 25, 26 | Not reported |
+| `277770050` | `277770048` | 3, 6, 10, 19, 22 | Not reported |
+| `418923369` | `418923360` | 3, 9, 10, 17, 28 | 6, 7, 9, 13, 14, 24, 26 |
+| `422049544` | `422049536` | 3, 27 | 13, 14, 24, 26 |
 
 The source posts sometimes omit Spring 3 from their written list because it is
-forced rain; the normalized table includes it. The local page and scanner match
-every reported date. Sources: [Switch 2 world-seed
+forced rain; the normalized table includes it. The corrected local page and
+scanner match every reported date. Sources: [Switch 2 world-seed
 report](https://www.reddit.com/r/StardewValley/comments/1vlmh6z/switch_2_world_seeds/)
-and [Switch 1.6 seed
-list](https://www.reddit.com/r/StardewValley/comments/1vfv9mc/list_of_stardew_switch_seeds_16_for_those_that/).
+list](https://www.reddit.com/r/StardewValley/comments/1vfv9mc/list_of_stardew_switch_seeds_16_for_those_that/),
+and [additional Switch 1.6 observations](https://www.reddit.com/r/StardewValley/comments/1vi6k4v/more_stardew_switch_seeds_community_center/).
 
-The executable regression is `tests/switch-rain-search.test.sh`. A separate
-107-seed differential audit, including IDs 0, 1, and 999,999,999, also matched
-the repository's checked-in `xxhash.min.js` and `jk-random.js` primitives.
+An on-console report for entered seed `401102058` also found no random Spring
+rain before day 12. Its effective ID `401102048` predicts Spring rain on days
+3, 12, 18, and 22, reproducing that result through the reported date. This
+observation was the regression which exposed the input-precision bug.
+
+The executable regression is `tests/switch-rain-search.test.sh`. The scanner's
+RNG implementation was also differentially checked against the repository's
+checked-in `xxhash.min.js` and `jk-random.js` primitives.
 
 ## Exhaustive nine-digit results
 
 `tools/search-switch-rain.cpp` was compiled with Clang `-O3` and run across the
-full half-open range `[0, 1,000,000,000)`. Its JKISS/weather implementation was
-first checked against the observed calendars above, then all seven winning
-calendars were confirmed end to end in the local Weather tab. A second scan of
-the two half-ranges independently reproduced the same two plus five winners.
+full half-open entered-seed range `[0, 1,000,000,000)`. Separate scans of the
+two half-ranges reproduced the same winners: two distinct effective IDs below
+500 million and one above it.
 
-The maximum combined Spring + Summer result is **28 wet days**. Seven seeds tie:
+The earlier exact-integer scan incorrectly reported 28 wet days because it
+scored IDs which can't remain unchanged when typed into the Switch field. After
+normalizing inputs and rescanning the full nine-digit domain, the maximum is
+**27 wet days**. Three distinct effective IDs tie:
 
-| Seed | Spring | Summer | Total |
+| Entered seed | Spring | Summer | Total |
 |---:|---:|---:|---:|
-| 401102058 | 14 | 14 | 28 |
-| 637866477 | 14 | 14 | 28 |
-| 626085842 | 13 | 15 | 28 |
-| 777047899 | 13 | 15 | 28 |
-| 912624982 | 13 | 15 | 28 |
-| 604375215 | 16 | 12 | 28 |
-| 414068206 | 12 | 16 | 28 |
+| `96194896` | 14 | 13 | 27 |
+| `656913728` | 13 | 14 | 27 |
+| `4315107` | 11 | 16 | 27 |
 
-Separate single-season searches found:
+The balanced recommendation is `96194896`. Its exact wet dates are:
 
-- most Spring rain: seed `882408864`, with 18 Spring + 6 Summer = 24;
-- most Summer rain: 19 days, with seed `397777328` the strongest combined
-  option at 6 Spring + 19 Summer = 25 (seed `727886235` has the same split).
+- Spring: 3, 6, 8, 9, 11, 12, 14, 19, 20, 21, 22, 25, 26, 28;
+- Summer: 6, 7, 8, 9, 12, 13, 15, 16, 17, 19, 24, 25, 26;
+- Green Rain: Summer 16; deterministic storms: Summer 13 and 26.
 
-For a balanced rain distribution, `401102058` and `637866477` are the two
-14-Spring + 14-Summer candidates. This is only a weather tiebreaker; cart stock,
-night events, and route timing are outside this search's score.
+This is only a weather score; cart stock, night events, and route timing are
+outside the objective.
 
-All seven winners are algorithmic predictions, not console-observed seeds.
-In particular, `604375215` is **disputed**: the local predictor and both native
-scanners calculate 16 Spring wet days, but one on-console report did not see the
-predicted Spring 6–11 rain block. Do not present that seed as console-validated
-until its entered ID, game version, and settings have been independently
-confirmed.
+The corrected single-season maxima are:
+
+- Spring: `681786432`, with 17 Spring + 9 Summer = 26 wet days;
+- Summer: `64339760`, with 8 Spring + 18 Summer = 26 wet days. Three other
+  distinct effective IDs also have 18 wet Summer days but lower combined totals.
+
+All three winners are algorithmic predictions, not yet console-observed seeds.
+In particular, don't reuse the superseded `401102058` or `604375215`
+recommendations from the original scan. After input normalization,
+`604375215` resolves to `604375232`, but one on-console report still disagrees
+with that calendar; it remains a separate unresolved observation.

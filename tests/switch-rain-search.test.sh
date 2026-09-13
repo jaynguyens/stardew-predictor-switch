@@ -30,8 +30,37 @@ assert_line "$seed_77445" 'spring=3,6,14,28'
 assert_line "$seed_77445" 'summer=13,16,17,26'
 assert_line "$seed_77445" 'green_rain=16'
 
+# The Switch new-game seed field loses precision as a 32-bit float. Large
+# entered values must be converted to the effective game ID before scoring.
+seed_401102058=$($search calendar 401102058)
+assert_line "$seed_401102058" 'entered_seed=401102058'
+assert_line "$seed_401102058" 'effective_seed=401102048'
+assert_line "$seed_401102058" 'spring=3,12,18,22'
+
+# Independently observed large Switch seeds from the same Reddit report. These
+# calendars only match after applying the input-field precision conversion.
+seed_277770050=$($search calendar 277770050)
+assert_line "$seed_277770050" 'effective_seed=277770048'
+assert_line "$seed_277770050" 'spring=3,6,10,19,22'
+
+seed_418923369=$($search calendar 418923369)
+assert_line "$seed_418923369" 'effective_seed=418923360'
+assert_line "$seed_418923369" 'spring=3,9,10,17,28'
+assert_line "$seed_418923369" 'summer=6,7,9,13,14,24,26'
+assert_line "$seed_418923369" 'green_rain=14'
+
+seed_422049544=$($search calendar 422049544)
+assert_line "$seed_422049544" 'effective_seed=422049536'
+assert_line "$seed_422049544" 'spring=3,27'
+assert_line "$seed_422049544" 'summer=13,14,24,26'
+assert_line "$seed_422049544" 'green_rain=14'
+
 # Exercise search/ranking, not just calendar rendering.
-small_search=$($search 401102050 401102060 2 total)
-assert_line "$small_search" 'seed=401102058 spring=14 summer=14 total=28'
+small_search=$($search 401102048 401102049 2 total)
+assert_line "$small_search" 'entered_seed=401102048 effective_seed=401102048 spring=4 summer=7 total=11'
+
+winner_search=$($search 96194896 96194897 1 total)
+printf '%s\n' "$winner_search" | grep -F 'objective=total best=27 ties=1' >/dev/null
+assert_line "$winner_search" 'entered_seed=96194896 effective_seed=96194896 spring=14 summer=13 total=27'
 
 printf '%s\n' 'Switch rain search regression tests passed'

@@ -10,6 +10,16 @@ This build is published from branch `local-switch-1.6.15`. It includes the JKISS
 implementation from upstream pull request #40 and aliases Predictor's global
 `CSRandom` constructor to `JKRandom` before the main application loads.
 
+For a number manually typed into the Switch new-game **Random Seed** field, use
+the `seed` URL parameter. Use `id` only for an exact internal Game ID obtained
+from a save or seed cracker. Large typed values can resolve to a nearby Game ID
+because the Switch field behaves like a 32-bit float:
+
+```text
+?seed=401102058  -> effective Game ID 401102048
+?id=401102058    -> exact internal Game ID 401102058
+```
+
 Run:
 
 ```sh
@@ -79,7 +89,8 @@ weather-focused seeds discussed during validation:
 # Show a console-observed seed's wet dates and usable Spring Fairy nights.
 ./tools/search-switch-seeds.sh weather 8213213
 
-# Search the complete 4,294,967,294-ID weather period for maximum combined wet days.
+# Search exact internal Game IDs across the complete weather period.
+# This is research mode, not a search of values which can be typed unchanged.
 ./tools/search-switch-seeds.sh max-wet
 
 # Find the exact Spring pattern 3,6-10,18-22,28 over its complete period.
@@ -118,8 +129,14 @@ seed domain, use the optimized C++ rain scanner:
 ./tests/switch-rain-search.test.sh
 ```
 
-The exact weather rules, observation fixtures, exhaustive results, and known
-`604375215` discrepancy are documented in
+The corrected exhaustive result is **27 combined wet days**. The balanced
+recommendation is entered seed `96194896`, with 14 wet Spring days and 13 wet
+Summer days. The other distinct effective-ID ties are `656913728` (13 + 14)
+and `4315107` (11 + 16). These winners are algorithmic and still need an
+on-console confirmation before a long playthrough.
+
+The exact weather rules, typed-seed precision behavior, observation fixtures,
+exhaustive results, and known `604375215` discrepancy are documented in
 [`docs/weather-seed-rules-1.6.15.md`](docs/weather-seed-rules-1.6.15.md).
 
 ## About Stardew Predictor
