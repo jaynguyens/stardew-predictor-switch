@@ -64,6 +64,11 @@ The calendars returned by an exhaustive search are still algorithmic
 predictions. Unless a result is identified as console-observed, test it on the
 target Switch version before committing to a long playthrough.
 
+The local Weather tab was also checked end to end against the normalized
+Spring calendars for Reddit-observed seeds `8213213`, `8478309`, `24680`, and
+`77445`. All four match; several source lists omit Spring 3 only because that
+day is forced rain in every new game.
+
 ## Reproducing the seed searches
 
 The native search utility in `tools/` uses the same xxHash32 and Switch JKISS
@@ -95,6 +100,27 @@ CPU-intensive. Run the fast known-seed regression checks with:
 ```sh
 ./tests/seed-search.test.sh
 ```
+
+For a focused, independently implemented search of the playable nine-digit
+seed domain, use the optimized C++ rain scanner:
+
+```sh
+# Verify one exact calendar.
+./tools/search-switch-rain.sh calendar 8213213
+
+# Search all valid new-game seed entries for the combined maximum.
+./tools/search-switch-rain.sh
+
+# Search a resumable range with four workers and a Spring-only objective.
+./tools/search-switch-rain.sh 0 100000000 4 spring
+
+# Run its console-observation and ranking regression suite.
+./tests/switch-rain-search.test.sh
+```
+
+The exact weather rules, observation fixtures, exhaustive results, and known
+`604375215` discrepancy are documented in
+[`docs/weather-seed-rules-1.6.15.md`](docs/weather-seed-rules-1.6.15.md).
 
 ## About Stardew Predictor
 
