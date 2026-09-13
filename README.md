@@ -53,6 +53,38 @@ sunny even when its unused seeded roll is rain. The reported Day 5 iron bar in
 George's trash can is reproduced with `hfr=1`, since bar loot requires the
 Furnace recipe state.
 
+## Reproducing the seed searches
+
+The native search utility in `tools/` uses the same xxHash32 and Switch JKISS
+rules as this build. It supports the exhaustive searches used to find the
+weather-focused seeds discussed during validation:
+
+```sh
+# Show one seed's Spring/Summer wet dates and usable Spring Fairy nights.
+./tools/search-switch-seeds.sh weather 2386634
+
+# Search the complete 4,294,967,294-ID weather period for maximum combined wet days.
+./tools/search-switch-seeds.sh max-wet
+
+# Find the exact Spring pattern 3,6-10,18-22,28 over its complete period.
+./tools/search-switch-seeds.sh exact-spring
+
+# Require dry Spring 6-7, rainy 8-10, a usable Fairy, and maximize rain on 13-28.
+./tools/search-switch-seeds.sh late-fairy
+
+# Apply the same weather search but require the Fairy on Spring 1 night.
+./tools/search-switch-seeds.sh late-night1-fairy
+```
+
+Search commands optionally accept `START END JOBS`, where the range is
+start-inclusive and end-exclusive. This makes long scans easy to partition or
+resume. By default the tool uses all detected CPU cores; full-period scans are
+CPU-intensive. Run the fast known-seed regression checks with:
+
+```sh
+./tests/seed-search.test.sh
+```
+
 ## About Stardew Predictor
 
 This app simulates the random number generator used in [Stardew Valley](https://stardewvalley.net/) and makes "predictions" about the game either from the Game ID or by reading the save file. Currently, the information predicted includes special mine levels (e.g. mushroom floor &amp; infestations), random items sold by some vendors, results from cracking geodes, the train schedule, and more.
