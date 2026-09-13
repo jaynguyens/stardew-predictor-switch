@@ -53,6 +53,17 @@ sunny even when its unused seeded roll is rain. The reported Day 5 iron bar in
 George's trash can is reproduced with `hfr=1`, since bar loot requires the
 Furnace recipe state.
 
+Console-observed seed `008213213` (numeric ID `8213213`) is an additional
+weather calibration. Its reported Spring rain dates are 3, 7, 9, 10, 12, 17,
+19, 20, 21, 25, and 28; the predictor and native search utility reproduce all
+11 dates exactly with Switch JKISS and legacy randomization disabled. This
+fixture comes from the [Switch 2 world-seed report on
+Reddit](https://www.reddit.com/r/StardewValley/comments/1vlmh6z/switch_2_world_seeds/).
+
+The calendars returned by an exhaustive search are still algorithmic
+predictions. Unless a result is identified as console-observed, test it on the
+target Switch version before committing to a long playthrough.
+
 ## Reproducing the seed searches
 
 The native search utility in `tools/` uses the same xxHash32 and Switch JKISS
@@ -60,8 +71,8 @@ rules as this build. It supports the exhaustive searches used to find the
 weather-focused seeds discussed during validation:
 
 ```sh
-# Show one seed's Spring/Summer wet dates and usable Spring Fairy nights.
-./tools/search-switch-seeds.sh weather 2386634
+# Show a console-observed seed's wet dates and usable Spring Fairy nights.
+./tools/search-switch-seeds.sh weather 8213213
 
 # Search the complete 4,294,967,294-ID weather period for maximum combined wet days.
 ./tools/search-switch-seeds.sh max-wet

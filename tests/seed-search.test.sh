@@ -4,9 +4,15 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 search="$repo_dir/tools/search-switch-seeds.sh"
 
-weather=$($search weather 2386634)
-printf '%s\n' "$weather" | grep -F 'spring=3,6,7,8,9,10,18,20,22,28' >/dev/null
-printf '%s\n' "$weather" | grep -F 'spring_fairy=1' >/dev/null
+# Console-observed Switch seed from:
+# https://www.reddit.com/r/StardewValley/comments/1vlmh6z/switch_2_world_seeds/
+# The in-game entry was written as 008213213; leading zeroes don't change its ID.
+observed=$($search weather 8213213)
+printf '%s\n' "$observed" | grep -F 'spring=3,7,9,10,12,17,19,20,21,25,28' >/dev/null
+
+fairy_weather=$($search weather 2386634)
+printf '%s\n' "$fairy_weather" | grep -F 'spring=3,6,7,8,9,10,18,20,22,28' >/dev/null
+printf '%s\n' "$fairy_weather" | grep -F 'spring_fairy=1' >/dev/null
 
 exact=$($search exact-spring 248517418 248517419 1)
 printf '%s\n' "$exact" | grep -F 'matches=1' >/dev/null
